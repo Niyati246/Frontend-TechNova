@@ -1,15 +1,18 @@
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  Dimensions,
-  StatusBar,
-  ScrollView,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { router, Stack } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
 
 const { height } = Dimensions.get('window');
 
@@ -28,96 +31,135 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const { login, register, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const handleSignIn = () => {
-    console.log("Sign In clicked");
-    router.replace('/(tabs)/App'); 
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      router.replace('/(tabs)/Dashboard');
+    }
+  }, [isAuthenticated, authLoading]);
+
+  const handleSignIn = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await login(email.trim(), password);
+      // Navigate to dashboard after successful login
+      router.replace('/(tabs)/Dashboard');
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message || 'An error occurred during login');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignUp = () => {
-    router.push('/(tabs)/SkillSelectionScreen');
+    // Navigate to the comprehensive signup form
+    router.push('/(tabs)/SignupForm');
   };
 
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <View style={[styles.scrollContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={{ marginTop: 10, color: COLORS.textDark }}>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
-    <>
-      {/* ✅ This removes the white header */}
-      <Stack.Screen options={{ headerShown: false }} />
+    <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.wavePrimary} />
+      
+      {/* Decorative Wave Background (Purple) */}
+      <View style={styles.decorativeTopWave} />
+      {/* Secondary Wave (Blue/Purple blend) */}
+      <View style={styles.decorativeSecondaryWave} />
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <StatusBar barStyle="light-content" backgroundColor={COLORS.wavePrimary} />
-        
-        {/* Decorative Wave Background (Purple) */}
-        <View style={styles.decorativeTopWave} />
-        {/* Secondary Wave (Blue/Purple blend) */}
-        <View style={styles.decorativeSecondaryWave} />
+      <View style={styles.contentContainer}>
+        <Text style={styles.title}>Sign In</Text>
+        <Text style={styles.subtitle}>Sign in to your Registered Account.</Text>
 
-        <View style={styles.contentContainer}>
-          <Text style={styles.title}>Sign In</Text>
-          <Text style={styles.subtitle}>Sign in to your Registered Account.</Text>
+        {/* --- Card Container for Form --- */}
+        <View style={styles.card}>
+          
+          {/* Email Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Email Address</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="example@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
 
-          {/* --- Card Container for Form --- */}
-          <View style={styles.card}>
-            
-            {/* Email Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email Address</Text>
+          {/* Password Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.passwordContainer}>
               <TextInput
-                style={styles.input}
-                placeholder="example@email.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
+                style={styles.passwordInput}
+                placeholder="************"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!isPasswordVisible}
               />
-            </View>
-
-            {/* Password Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="************"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!isPasswordVisible}
-                />
-                <TouchableOpacity
-                  onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                  style={styles.toggleButton}
-                >
-                  <Text style={{ color: COLORS.primary, fontSize: 14 }}>
-                    {isPasswordVisible ? 'HIDE' : 'SHOW'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity style={styles.forgotPasswordButton}>
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              <TouchableOpacity
+                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                style={styles.toggleButton}
+              >
+                <Text style={{ color: COLORS.primary, fontSize: 14 }}>
+                  {isPasswordVisible ? 'HIDE' : 'SHOW'}
+                </Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity style={styles.forgotPasswordButton}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          </View>
 
-            {/* Buttons */}
-            <View style={styles.buttonRow}>
-              {/* SIGN UP Button */}
-              <TouchableOpacity 
-                style={[styles.button, styles.secondaryButton]} 
-                onPress={handleSignUp}
-              >
+          {/* Buttons */}
+          <View style={styles.buttonRow}>
+            {/* SIGN UP Button */}
+            <TouchableOpacity 
+              style={[styles.button, styles.secondaryButton, isLoading && styles.disabledButton]} 
+              onPress={handleSignUp}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={COLORS.primary} size="small" />
+              ) : (
                 <Text style={[styles.buttonText, styles.secondaryButtonText]}>SIGN UP</Text>
-              </TouchableOpacity>
+              )}
+            </TouchableOpacity>
 
-              {/* SIGN IN Button */}
-              <TouchableOpacity 
-                style={[styles.button, styles.primaryButton]} 
-                onPress={handleSignIn} 
-              >
+            {/* SIGN IN Button */}
+            <TouchableOpacity 
+              style={[styles.button, styles.primaryButton, isLoading && styles.disabledButton]} 
+              onPress={handleSignIn}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={COLORS.textLight} size="small" />
+              ) : (
                 <Text style={[styles.buttonText, styles.primaryButtonText]}>SIGN IN</Text>
-              </TouchableOpacity>
-            </View>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
-    </>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -247,5 +289,8 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: COLORS.primary,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });

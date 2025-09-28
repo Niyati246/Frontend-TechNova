@@ -1,17 +1,18 @@
-import React, { useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  Animated,
-  PanResponder,
-  StatusBar,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    Animated,
+    Dimensions,
+    PanResponder,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,12 +43,98 @@ type Mentor = {
   phone?: string;
 };
 
-const DUMMY_MENTORS: Mentor[] = [
-  { id: 'm1', name: 'Jane Doe', skill: 'React Native', level: 'Expert', location: 'Toronto', mode: 'Hybrid', avatarColor: '#A5B5FF', email: 'jane@example.com', phone: '555-1234' },
-  { id: 'm2', name: 'John Smith', skill: 'JavaScript', level: 'Intermediate', location: 'Remote', mode: 'Online', avatarColor: '#FFD799', email: 'john@example.com', phone: '555-5678' },
-  { id: 'm3', name: 'Kai Lee', skill: 'UI/UX Design', level: 'Beginner', location: 'Waterloo', mode: 'In-person', avatarColor: '#B1F4C5', email: 'kai@example.com', phone: '555-9012' },
-  { id: 'm4', name: 'Pat Chen', skill: 'Node.js', level: 'Expert', location: 'Vancouver', mode: 'Hybrid', avatarColor: '#C7B1FF', email: 'pat@example.com', phone: '555-3456' },
-];
+const generatePersonalizedMentors = (userSkills: string[], userLocation: string = 'Remote'): Mentor[] => {
+  const mentors: Mentor[] = [];
+  const avatarColors = ['#A5B5FF', '#FFD799', '#B1F4C5', '#C7B1FF', '#FFB3BA', '#BAFFC9', '#BAE1FF', '#FFFFBA'];
+  const modes: Mentor['mode'][] = ['Online', 'In-person', 'Hybrid'];
+  const levels: Mentor['level'][] = ['Beginner', 'Intermediate', 'Expert'];
+  
+  // Generate mentors for each skill
+  userSkills.forEach((skill, index) => {
+    const skillLower = skill.toLowerCase();
+    
+    let mentorName = '';
+    let mentorSkill = '';
+    let description = '';
+    
+    if (skillLower.includes('cooking') || skillLower.includes('culinary')) {
+      mentorName = 'Chef Maria Rodriguez';
+      mentorSkill = 'Culinary Arts';
+      description = 'Professional chef with 15+ years experience in fine dining and home cooking techniques.';
+    } else if (skillLower.includes('painting') || skillLower.includes('art')) {
+      mentorName = 'Artist Sarah Chen';
+      mentorSkill = 'Visual Arts';
+      description = 'Award-winning painter and art instructor specializing in watercolor and acrylic techniques.';
+    } else if (skillLower.includes('gardening') || skillLower.includes('plant')) {
+      mentorName = 'Master Gardener John';
+      mentorSkill = 'Horticulture';
+      description = 'Certified master gardener with expertise in organic farming and sustainable gardening practices.';
+    } else if (skillLower.includes('dancing') || skillLower.includes('dance')) {
+      mentorName = 'Dance Instructor Lisa';
+      mentorSkill = 'Dance & Movement';
+      description = 'Professional dancer and choreographer with 20+ years teaching experience in various dance styles.';
+    } else if (skillLower.includes('leadership') || skillLower.includes('lead')) {
+      mentorName = 'Executive Coach Mike';
+      mentorSkill = 'Leadership Development';
+      description = 'Former Fortune 500 executive turned leadership coach, specializing in team management and strategic thinking.';
+    } else if (skillLower.includes('speaking') || skillLower.includes('public')) {
+      mentorName = 'Communication Expert Anna';
+      mentorSkill = 'Public Speaking';
+      description = 'TEDx speaker and communication coach helping professionals overcome stage fright and deliver powerful presentations.';
+    } else if (skillLower.includes('first aid') || skillLower.includes('medical')) {
+      mentorName = 'Dr. Sarah Mitchell';
+      mentorSkill = 'Emergency Medicine';
+      description = 'Emergency room physician and certified first aid instructor with extensive trauma care experience.';
+    } else if (skillLower.includes('javascript') || skillLower.includes('programming')) {
+      mentorName = 'Senior Developer Alex';
+      mentorSkill = 'Software Development';
+      description = 'Full-stack developer and tech lead with expertise in modern JavaScript frameworks and cloud architecture.';
+    } else if (skillLower.includes('python')) {
+      mentorName = 'Data Scientist Emma';
+      mentorSkill = 'Python Programming';
+      description = 'Senior data scientist specializing in machine learning, data analysis, and Python automation.';
+    } else if (skillLower.includes('design') || skillLower.includes('ui')) {
+      mentorName = 'UX Designer Carlos';
+      mentorSkill = 'User Experience Design';
+      description = 'Senior UX designer with 10+ years creating intuitive digital experiences for Fortune 500 companies.';
+    } else if (skillLower.includes('writing') || skillLower.includes('write')) {
+      mentorName = 'Author Jennifer';
+      mentorSkill = 'Creative Writing';
+      description = 'Published author and writing coach helping aspiring writers develop their voice and storytelling skills.';
+    } else if (skillLower.includes('translation') || skillLower.includes('translate')) {
+      mentorName = 'Dr. Pierre Dubois';
+      mentorSkill = 'Linguistics & Translation';
+      description = 'Polyglot linguist and certified translator with expertise in multiple languages and cultural contexts.';
+    } else if (skillLower.includes('french')) {
+      mentorName = 'French Tutor Marie';
+      mentorSkill = 'French Language';
+      description = 'Native French speaker and language instructor with 12+ years teaching French to international students.';
+    } else if (skillLower.includes('spanish')) {
+      mentorName = 'Spanish Tutor Carlos';
+      mentorSkill = 'Spanish Language';
+      description = 'Native Spanish speaker and certified language teacher specializing in conversational Spanish and business communication.';
+    } else {
+      // Generic mentor for other skills
+      mentorName = `${skill} Expert`;
+      mentorSkill = skill;
+      description = `Professional ${skill.toLowerCase()} instructor with extensive experience and proven track record.`;
+    }
+    
+    mentors.push({
+      id: `mentor_${index + 1}`,
+      name: mentorName,
+      skill: mentorSkill,
+      level: levels[index % levels.length],
+      location: userLocation,
+      mode: modes[index % modes.length],
+      avatarColor: avatarColors[index % avatarColors.length],
+      email: `${mentorName.toLowerCase().replace(/\s+/g, '.')}@mentorapp.com`,
+      phone: `555-${1000 + index}`
+    });
+  });
+  
+  return mentors;
+};
 
 const SWIPE_THRESHOLD = 120;
 
@@ -66,15 +153,33 @@ const ModeBadge = ({ mode }: { mode: Mentor['mode'] }) => {
 };
 
 const MatchScreen = () => {
-  const [mentors, setMentors] = useState(DUMMY_MENTORS);
+  const { user } = useAuth();
+  const [mentors, setMentors] = useState<Mentor[]>([]);
   const [matches, setMatches] = useState<Mentor[]>([]);
   const [showMatches, setShowMatches] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [positions, setPositions] = useState(() =>
-    DUMMY_MENTORS.map(() => new Animated.ValueXY())
-  );
+  const [positions, setPositions] = useState<Animated.ValueXY[]>([]);
 
   const router = useRouter();
+
+  // Generate personalized mentors based on user's skills
+  useEffect(() => {
+    if (user?.skills && user.skills.length > 0) {
+      console.log('Generating personalized mentors for skills:', user.skills);
+      const personalizedMentors = generatePersonalizedMentors(user.skills, user.location || 'Remote');
+      console.log('Generated mentors:', personalizedMentors);
+      setMentors(personalizedMentors);
+      setPositions(personalizedMentors.map(() => new Animated.ValueXY()));
+      setIsLoading(false);
+    } else {
+      console.log('No user skills found, using default mentors');
+      const defaultMentors = generatePersonalizedMentors(['Cooking', 'Gardening', 'Public Speaking', 'Leadership']);
+      setMentors(defaultMentors);
+      setPositions(defaultMentors.map(() => new Animated.ValueXY()));
+      setIsLoading(false);
+    }
+  }, [user?.skills, user?.location]);
 
   const swipeCard = (index: number, direction: 'left' | 'right') => {
     if (index >= mentors.length) return;
@@ -166,7 +271,15 @@ const MatchScreen = () => {
               <ModeBadge mode={match.mode} />
               <TouchableOpacity
                 style={styles.chatButtonWide}
-                onPress={() => router.push({ pathname: '/ChatScreen', params: { mentorName: match.name } })}
+                onPress={() => router.push({ 
+                  pathname: '/ChatScreen', 
+                  params: { 
+                    mentorName: match.name,
+                    mentorSkill: match.skill,
+                    mentorEmail: match.email,
+                    mentorPhone: match.phone
+                  } 
+                })}
               >
                 <Text style={styles.chatButtonTextWide}>Chat</Text>
               </TouchableOpacity>
@@ -179,6 +292,26 @@ const MatchScreen = () => {
       </ScrollView>
     </View>
   );
+
+  if (isLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.container}>
+          <StatusBar hidden />
+          <TouchableOpacity style={styles.topBackButton} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={28} color={COLORS.textDark} />
+            <Text style={styles.topBackText}>Back</Text>
+          </TouchableOpacity>
+          <View style={styles.loadingContainer}>
+            <Ionicons name="school" size={60} color={COLORS.primary} />
+            <Text style={styles.loadingText}>Finding your perfect mentors...</Text>
+            <Text style={styles.loadingSubtext}>Based on your skills: {user?.skills?.join(', ') || 'Your Skills'}</Text>
+          </View>
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
@@ -292,11 +425,31 @@ const styles = StyleSheet.create({
   backButtonText: { color: COLORS.textLight, fontWeight: '700', fontSize: 16 },
   actionButtons: { position: 'absolute', bottom: 50, flexDirection: 'row', justifyContent: 'space-around', width: '60%' },
   actionButton: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  loadingText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    fontSize: 16,
+    color: COLORS.textSubtle,
+    marginTop: 10,
+    textAlign: 'center',
+  },
 });
 
 const badgeStyles = StyleSheet.create({
   container: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, borderWidth: 1 },
   text: { fontSize: 12, fontWeight: '600', marginLeft: 4 },
 });
+
 
 export default MatchScreen;
