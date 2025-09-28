@@ -1,5 +1,4 @@
-// Simple Gemini API service using fetch
-const GEMINI_API_KEY = 'AIzaSyDTcF27cqsQy5doO6e6h8kn4OS-fdYfmI4';
+import { GEMINI_API_KEY } from '@env';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 export interface UserProfile {
